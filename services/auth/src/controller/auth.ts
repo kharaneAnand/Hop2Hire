@@ -65,4 +65,46 @@ export const registerUser =TryCatch(async(req , res , next)=>{
        registeredUser,
        token,
     }) ;
-})
+}) ;
+
+
+export const loginUser = TryCatch(async(req , res , next)=>{
+
+    const {email , password} = req.body ;
+
+    if(!email || !password){
+        throw new ErrorHandler(400 , "Please fill all valid details !") ;
+    }
+
+    const user = await sql`
+        SELECT u.user_id , u.name , u.email , u.password , u.phone_number , u.role , u.bio , u.resume , u.profile_pic , u.subscription ,
+        ARRAY_AGG(s.name) FILTER (WHERE s.name IS NOT NULL) as  skills FROM users u LEFT JOIN user_skills us on u.user_id = us.user_id
+        LEFT JOIN skills s ON us.skill_id = s.skill_id
+        WHERE u.email = ${email} GROUP BY u.user_id ;
+    ` ;
+
+    if(user.length ===0) {
+        throw new ErrorHandler(400 , "Invalid Credentials") ;
+    }
+
+    const usersObject = user[0] ;
+
+    const matchPassword = await bcrypt.compare(password , usersObject.password) 
+
+    if(!matchPassword){
+        throw new ErrorHandler(400 , "Invalid Credentials") ;
+    }
+
+    usersObject.skills = usersObject.skills || [] ;
+    delete usersObject.password ;
+
+    const token = jwt.sign( { id:usersObject?.user_id },process.env.JWT_SEC as string ,{
+         expiresIn:"15d",
+        }) ;
+
+        res.json({
+            message :"user loggedIn" ,
+            usersObject ,
+            token ,
+        });
+});
