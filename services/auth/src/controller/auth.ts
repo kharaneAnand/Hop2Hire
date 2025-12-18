@@ -4,6 +4,7 @@ import ErrorHandler from "../utils/errorHandler.js";
 import { TryCatch } from "../utils/TryCatch.js";
 import bcrypt from 'bcrypt' ;
 import axios from "axios";
+import jwt from 'jsonwebtoken' ;
 
 export const registerUser =TryCatch(async(req , res , next)=>{
     const {name , email , password , phoneNumber , role , bio} = req.body ;
@@ -50,8 +51,18 @@ export const registerUser =TryCatch(async(req , res , next)=>{
          const [user] = await sql`INSERT INTO users(name  , email , password , phone_number , role , bio , resume  ,resume_public_id ) VALUES 
         (${name} , ${email} , ${hashPassword} , ${phoneNumber} , ${role} , ${bio} , ${data.url} , ${data.public_id}) RETURNING 
         user_id , name , email , phone_number , role ,bio , resume , created_at` ;
+
+         registeredUser = user 
         
     }
 
-    res.json(email) ;
+    const token = jwt.sign({id : registeredUser?.user_id} , process.env.JWT_SEC as string , {
+        expiresIn:"15d" ,
+    });
+
+    res.json({
+        message : "user Registered" ,
+       registeredUser,
+       token,
+    }) ;
 })
