@@ -159,4 +159,50 @@ export const forgotPassword = TryCatch(async(req , res , next)=>{
     });
 });
 
+export const resetPassword = TryCatch(async(req , res , next)=>{
+    const {token} = req.params ;
+    const {password} = req.body ;
+
+    let decoded:any ;
+
+    try {
+
+        decoded = jwt.verify(token , process.env.JWT_SEC as string) 
+        
+    } catch (error) {
+        throw new ErrorHandler(400 , "Invalid or expired reset token !") ;
+    }
+
+    if(decoded.type !== "reset"){
+        throw new ErrorHandler(400 , "Invalid Token type") ;
+    }
+
+    const email = decoded.email ;
+
+    const storedToken = await redisClient.get(`forgot:${email}`)
+
+    if(!storedToken || storedToken!==token ){
+        throw new ErrorHandler(400 , "token has been expired !") ;
+    }
+
+    const users = await sql ` SELECT user_id FROM users WHERE email = ${email}`
+    if(users.length ===0){
+        throw new ErrorHandler(404 , "user not found") ;
+    }
+
+    if (!password || password.length < 8) {
+         throw new ErrorHandler(400, "Password must be at least 8 characters");
+    }
+
+    const user = users[0] 
+
+    const hashPassword = await bcrypt.hash(password , 10) ;
+    await sql `UPDATE users SET password = ${hashPassword} WHERE user_id = ${user.user_id}` ;
+
+    await redisClient.del(`forgot:${email}`) ;
+
+    res.json({message : " ✅ password changed sucessfully !"}) ;
+
+});
+
 
