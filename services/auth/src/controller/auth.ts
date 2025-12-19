@@ -7,7 +7,7 @@ import axios from "axios";
 import jwt from 'jsonwebtoken' ;
 import { forgotPasswordTemplate } from "../templet.js";
 import { publishToTopic } from "../producer.js";
-import { error } from "console";
+import { redisClient } from "../index.js";
 
 export const registerUser =TryCatch(async(req , res , next)=>{
     const {name , email , password , phoneNumber , role , bio} = req.body ;
@@ -140,6 +140,10 @@ export const forgotPassword = TryCatch(async(req , res , next)=>{
 
     const resetLink = `${process.env.Frontend_Url}/reset/${resetToken}`
 
+    await redisClient.set(`forgot:${email}` , resetToken , {
+        EX : 900 ,
+    });
+
     const message = {
         to:email,
         subject:"Reset your password - Hope2Hire",
@@ -154,3 +158,5 @@ export const forgotPassword = TryCatch(async(req , res , next)=>{
         message:"If that email exists , we have sent a reset link " ,
     });
 });
+
+
