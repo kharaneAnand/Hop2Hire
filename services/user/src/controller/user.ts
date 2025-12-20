@@ -1,4 +1,6 @@
+import axios from "axios";
 import { AuthenticatedRequest } from "../middleware/auth.js";
+import getBuffer from "../utils/buffer.js";
 import { sql } from "../utils/db.js";
 import ErrorHandler from "../utils/errorHandler.js";
 import { TryCatch } from "../utils/TryCatch.js";
@@ -70,3 +72,53 @@ export const updateUserProfile = TryCatch(async(req :AuthenticatedRequest , res 
     });
 
 });
+
+interface UploadResponse {
+  url: string;
+  public_id: string;
+}
+
+export const UpdateProfilePic = TryCatch(async (req: AuthenticatedRequest, res, next) => {
+  const user = req.user;
+
+  if (!user) {
+    throw new ErrorHandler(401, "Authentication Required");
+  }
+
+  const file = req.file;
+  if (!file) {
+    throw new ErrorHandler(400, "No Image File provided!");
+  }
+
+  const oldPublicId = user.profile_pic_public_id;
+  const fileBuffer = getBuffer(file);
+
+  if (!fileBuffer?.content) {
+    throw new ErrorHandler(500, "Failed to generate buffer");
+  }
+
+  const { data: uploadResult } = await axios.post<UploadResponse>(
+    `${process.env.UPLOAD_SERVICE}/api/utils/upload`,
+    {
+      buffer: fileBuffer.content,
+      public_id: oldPublicId,
+    }
+  );
+
+  const [updatedUser] = await sql`
+    UPDATE users
+    SET 
+      profile_pic = ${uploadResult.url},
+      profile_pic_public_id = ${uploadResult.public_id}
+    WHERE user_id = ${user.user_id}
+    RETURNING user_id, name, profile_pic;
+  `;
+
+  res.json({
+    message: "✅ Profile picture updated successfully",
+    updatedUser,
+  });
+});
+
+
+
