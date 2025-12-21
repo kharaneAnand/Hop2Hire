@@ -5,6 +5,12 @@ import { sql } from "../utils/db.js";
 import ErrorHandler from "../utils/errorHandler.js";
 import { TryCatch } from "../utils/TryCatch.js";
 
+
+interface UploadResponse {
+  url: string;
+  public_id: string;
+}
+
 export const myProfile = TryCatch(async(req:AuthenticatedRequest , res , next)=>{
     
     const user = req.user ;
@@ -72,11 +78,6 @@ export const updateUserProfile = TryCatch(async(req :AuthenticatedRequest , res 
     });
 
 });
-
-interface UploadResponse {
-  url: string;
-  public_id: string;
-}
 
 export const UpdateProfilePic = TryCatch(async (req: AuthenticatedRequest, res, next) => {
   const user = req.user;
@@ -186,8 +187,13 @@ export const addSkillToUser = TryCatch(async(req:AuthenticatedRequest , res , ne
 
       const skillId = skill.skill_id ;
 
-      const insertionResult = await sql `INSERT INTO user_skills (user_id , skill_id) VALUES (${userId} , ${skillId} 
-      ON CONFLICT (user_id , skill_id) DO NOTHING  RETURNING user_id)`;
+      const insertionResult = await sql`
+          INSERT INTO user_skills (user_id, skill_id)
+          VALUES (${userId}, ${skillId})
+          ON CONFLICT (user_id, skill_id) DO NOTHING
+          RETURNING user_id;
+        `;
+
 
       if(insertionResult.length > 0 ){
         wasSkillAdded = true ;
@@ -211,6 +217,32 @@ export const addSkillToUser = TryCatch(async(req:AuthenticatedRequest , res , ne
   })
 
 }) ;
+
+export const deleteSkillFromUser = TryCatch(async(req:AuthenticatedRequest , res , next)=>{
+
+  const user = req.user ;
+
+  if(!user){
+    throw new ErrorHandler(400 , "Authentication Required !") ;
+  }
+
+  const {skillName} = req.body ;
+  if(!skillName || skillName.trim() === ""){
+    throw new ErrorHandler(400 , "Please Provide the skill name ") ;
+  }
+
+  const result = await sql`DELETE FROM user_skills WHERE user_id = ${user.user_id}
+  AND skill_id = (SELECT skill_id FROM skills WHERE name = ${skillName.trim()}) RETURNING user_id ` ;
+
+  if(result.length === 0) {
+    throw new ErrorHandler(404 , `skill ${skillName.trim()} was not found `) ;
+  }
+
+  res.json({
+    message : `✅ skill ${skillName.trim()} deleted sucessfully` ;
+  }) ;
+
+});
 
 
 
