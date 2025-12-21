@@ -120,5 +120,97 @@ export const UpdateProfilePic = TryCatch(async (req: AuthenticatedRequest, res, 
   });
 });
 
+export const updateResume = TryCatch(async (req: AuthenticatedRequest, res, next) => {
+  const user = req.user;
+
+  if (!user) {
+    throw new ErrorHandler(401, "Authentication Required");
+  }
+
+  const file = req.file;
+  if (!file) {
+    throw new ErrorHandler(400, "No Resume File provided!");
+  }
+
+  const oldPublicId = user.resume_public_id;
+  const fileBuffer = getBuffer(file);
+
+  if (!fileBuffer?.content) {
+    throw new ErrorHandler(500, "Failed to generate buffer");
+  }
+
+  const { data: uploadResult } = await axios.post<UploadResponse>(
+    `${process.env.UPLOAD_SERVICE}/api/utils/upload`,
+    {
+      buffer: fileBuffer.content,
+      public_id: oldPublicId,
+    }
+  );
+
+  const [updatedUser] = await sql`
+    UPDATE users
+    SET 
+      resume = ${uploadResult.url},
+      resume_public_id = ${uploadResult.public_id}
+    WHERE user_id = ${user.user_id}
+    RETURNING user_id, name, resume;
+  `;
+
+  res.json({
+    message: "✅ Resume updated successfully",
+    updatedUser,
+  });
+});
+
+export const addSkillToUser = TryCatch(async(req:AuthenticatedRequest , res , next)=>{
+
+  const userId = req.user?.user_id ;
+  const {skillName} = req.body ;
+
+  if(!skillName || skillName.trim() === ""){
+    throw new ErrorHandler(400 , "Please Provide a skill name ") ;
+  }
+
+  let wasSkillAdded = false ;
+  try {
+    await sql`BEGIN`;
+
+    const users = await sql`SELECT user_id FROM users WHERE user_id = ${userId}` ;
+
+      if(users.length === 0){
+        throw new ErrorHandler(404 , "user not found .") ;
+      }
+
+      const [skill] = await sql`INSERT INTO skills (name) VALUES(${skillName.trim()}) ON 
+      CONFLICT (name) DO UPDATE SET  name = EXCLUDED.name RETURNING skill_id` ;
+
+      const skillId = skill.skill_id ;
+
+      const insertionResult = await sql `INSERT INTO user_skills (user_id , skill_id) VALUES (${userId} , ${skillId} 
+      ON CONFLICT (user_id , skill_id) DO NOTHING  RETURNING user_id)`;
+
+      if(insertionResult.length > 0 ){
+        wasSkillAdded = true ;
+      }
+
+      await sql`COMMIT` ;
+    
+  } catch (error) {
+    await sql`ROLLBACK` ;
+      throw error ;
+  }
+
+  if(!wasSkillAdded){
+    return res.status(200).json({
+      message : "User already possesses this skill" ,
+    });
+  }
+
+  res.json({
+    message : `✅ skill ${skillName.trim()} is added successfully ` ,
+  })
+
+}) ;
+
 
 
