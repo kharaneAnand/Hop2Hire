@@ -5,6 +5,7 @@ import { sql } from "../utils/db.js";
 import ErrorHandler from "../utils/errorHandler.js";
 import { TryCatch } from "../utils/TryCatch.js";
 
+
 export const createCompany = TryCatch(async(req : AuthenticatedRequest , res , next)=>{
         const user = req.user ;
 
@@ -238,3 +239,43 @@ export const getCompanyDetails = TryCatch(async(req : AuthenticatedRequest , res
 
     res.json(companyData) ;
 });
+
+export const getAllActiveJobs = TryCatch(async(req , res , next)=>{
+    const {title , location} = req.query as{
+      title?:string ;
+      location?:string;
+    };
+
+    let querySting = `SELECT j.job_id , j.title , j.description , j.salary , j.location , j.job_type , j.role , 
+    j.work_location , j.created_at , c.name AS company_name , c.logo AS company_logo , c.company_id AS company_id
+      FROM jobs j JOIN companies c ON j.company_id = c.company_id WHERE j.is_active = true 
+    ` ;
+
+      const Values = [] ;
+      let paramIndex = 1 
+
+      if(title){
+        querySting += ` AND j.title ILIKE $${paramIndex}` ;
+        Values.push(`%${title}%`) ;
+        paramIndex++ ;
+      }
+
+       if(location){
+        querySting += ` AND j.location ILIKE $${paramIndex}` ;
+        Values.push(`%${location}%`) ;
+        paramIndex++ ;
+      }
+
+      querySting += "ORDER BY j.created_at DESC" ;
+
+      const jobs = await sql.query(querySting , Values) as any[] ;
+
+      res.json(jobs) ;
+
+});
+
+export const getSingleJob = TryCatch(async(req , res )=>{
+    const [job] = await sql`SELECT * FROM jobs WHERE job_id = ${req.params.jobId}`
+
+    res.json(job) ; 
+}) ;
