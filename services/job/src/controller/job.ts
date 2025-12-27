@@ -307,3 +307,4 @@ export const getAllApplicationForJobs = TryCatch(async( req :AuthenticatedReques
   res.json(applications) ;
 }) ;
 
+
