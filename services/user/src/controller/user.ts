@@ -4,7 +4,7 @@ import getBuffer from "../utils/buffer.js";
 import { sql } from "../utils/db.js";
 import ErrorHandler from "../utils/errorHandler.js";
 import { TryCatch } from "../utils/TryCatch.js";
-import { application } from "express";
+
 
 
 interface UploadResponse {
