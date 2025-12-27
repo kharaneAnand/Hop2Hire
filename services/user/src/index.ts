@@ -10,5 +10,5 @@ app.use(express.json()) ;
 app.use("/api/user" , userRoutes) ;
 
 app.listen(process.env.PORT , ()=>{
-    console.log(`User Service is running on http://localhost:${process.env.PORT}`) ;
+    console.log(`✅ User Service is running on http://localhost:${process.env.PORT}`) ;
 });
