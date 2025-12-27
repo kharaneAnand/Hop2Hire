@@ -1,7 +1,7 @@
 import express from "express";
 import { isAuth } from "../middleware/auth.js";
 import uploadFile from "../middleware/multer.js";
-import { createCompany, createJob, deleteCompany, getAllActiveJobs, getAllApplicationForJobs, getAllCompany, getCompanyDetails, getSingleJob, updateJob } from "../controller/job.js";
+import { createCompany, createJob, deleteCompany, getAllActiveJobs, getAllApplicationForJobs, getAllCompany, getCompanyDetails, getSingleJob, updateApplication, updateJob } from "../controller/job.js";
 
 const router = express.Router() ;
 
@@ -14,5 +14,6 @@ router.get("/company/:id" , isAuth , getCompanyDetails) ;
 router.get("/all"  , getAllActiveJobs) ;
 router.get("/:jobId" , getSingleJob)
 router.get("/application/:jobId" , isAuth , getAllApplicationForJobs) ;
+router.put("/application/update/:id" , isAuth , updateApplication) ;
 
 export default router ;
