@@ -16,7 +16,7 @@ const NavBar = () => {
     setIsOpen(!isOpen);
   };
 
-  const isAuth = true;
+  const isAuth = false ;
   const logoutHandler = () => {};
 
   return (
