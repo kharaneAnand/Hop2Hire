@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import React, { useState } from "react";
 import { Button } from "./ui/button";
 import { Briefcase, Home, Info, LogOut, Menu, User, X } from "lucide-react";
-import { Popover, PopoverTrigger } from "./ui/popover";
+import { Popover, PopoverTrigger , PopoverContent } from "./ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { PopoverContent } from "@radix-ui/react-popover";
 import { ModeToggle } from "./ui/mode-toggle";
+
 
 const NavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,7 +16,7 @@ const NavBar = () => {
     setIsOpen(!isOpen);
   };
 
-  const isAuth = false;
+  const isAuth = true;
   const logoutHandler = () => {};
 
   return (
@@ -122,14 +121,58 @@ const NavBar = () => {
 
       {/** Mobile View  */}
       <div className={`md:hidden border-t overflow-hidden transition-all duration-300 ease-in-out
-         ${isOpen?"max-96 opacity-100": "max-h-0 opacity-0"}`}>
+         ${isOpen?"max-h-96 opacity-100": "max-h-0 opacity-0"}`}>
           <div className="px-3 py-3 space-y-1 bg-background/95 backdrop-blur-md">
+
             {/** isauth or user */}
             <Link href={'/'} onClick={toggleMenu}>
               <Button variant={"ghost"} className="w-full justify-start gap-3 h-11">
                   <Home size={18} />Home 
               </Button>
             </Link>
+
+            <Link href={'/jobs'} onClick={toggleMenu}>
+              <Button variant={"ghost"} className="w-full justify-start gap-3 h-11">
+                  <Briefcase size={18} />Jobs
+              </Button>
+            </Link>
+
+            <Link href={'/about'} onClick={toggleMenu}>
+              <Button variant={"ghost"} className="w-full justify-start gap-3 h-11">
+                  <Info size={18} />About
+              </Button>
+            </Link>
+
+            {
+              isAuth ?
+              (
+                <>
+                  <Link href={'/about'} onClick={toggleMenu}>
+                     <Button variant={"ghost"} className="w-full justify-start gap-3 h-11">
+                        <User size={18} />My Profile
+                      </Button>
+                   </Link>
+
+
+                  <Button variant={"destructive"} 
+                  className="w-full justify-start gap-3 h-11">
+                    <LogOut size={18} onClick={()=>{
+                      logoutHandler();
+                      toggleMenu()
+                    }} />LogOut
+                  </Button>
+
+                </>
+              ):(
+
+                <Link href={"/login"} onClick={toggleMenu}>
+                   <Button className="w-full justify-start gap-3 h-11 mt-2">
+                    <User size={18} />SignIn
+                  </Button>
+                </Link>
+              )
+            }
+
           </div>
       </div>
 
